@@ -1,9 +1,15 @@
 package cn.lemonnetwork.cloud.core;
 
+import cn.lemonnetwork.cloud.core.share.ShareRecord;
+import cn.lemonnetwork.cloud.core.share.ShareService;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 import lombok.Getter;
+import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.codecs.pojo.PojoCodecProvider;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -27,7 +33,32 @@ public class LemonCloudCoreApplication {
 
         client = MongoClients.create("mongodb://localhost:27017");
         database = client.getDatabase("lemoncloud"); //初始化数据库变量喵
+
+        ShareService.loadCollection(); //加载分享服务的表喵
+        //如果直接在全局变量中定义会被null塞满❤喵
+        //本喵真聪明
+
+        setMongoCodec(); //设置杂鱼MongoDB的ShareRecord的编解码器喵
     }
+
+    public static void setMongoCodec() {
+        CodecRegistry pojoCodecRegistry = CodecRegistries.fromProviders(
+                PojoCodecProvider.builder()
+                        .register(ShareRecord.class)
+                        .automatic(true)
+                        .build()
+        );
+
+        // 2. 组合默认编解码器和 POJO 编解码器
+        CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
+                MongoClientSettings.getDefaultCodecRegistry(),
+                pojoCodecRegistry
+        );
+
+        database = database.withCodecRegistry(codecRegistry);
+    }
+
+
 
     public static MongoClient getClient() {
         return client;

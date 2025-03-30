@@ -1,8 +1,10 @@
 package cn.lemonnetwork.cloud.core.controller;
 
 import cn.lemonnetwork.cloud.core.LemonCloudCoreApplication;
+import cn.lemonnetwork.cloud.core.share.ShareRecord;
+import cn.lemonnetwork.cloud.core.share.ShareService;
 import com.mongodb.client.MongoCollection;
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.bson.Document;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -13,17 +15,121 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.nio.file.*;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @RestController
 @RequestMapping("/file")
-@CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"})
+@CrossOrigin(origins = {"http://localhost:5173"})
 public class FileController {
+    private final ShareService shareService = new ShareService();
+
+    @PostMapping("/share")
+    @CrossOrigin(origins = {"http://localhost:5173"})
+    public ResponseEntity<?> createShare(
+            @RequestBody Map<String, Object> requestBody) {
+        String userName = LemonCloudCoreApplication.getUsername((String) requestBody.get("token"));
+
+        ShareRecord record = new ShareRecord();
+        record.setId(UUID.randomUUID().toString());
+        record.setUsername(userName);
+        record.setFilePath(requestBody.get("path") + "/" + requestBody.get("file"));
+        record.setIsDirectory((Boolean) requestBody.get("isDirectory"));
+        record.setCreated(new Date());
+        record.setExpire(ShareRecord.calculateExpireTime((Integer) requestBody.get("expireType")));
+
+        shareService.createShare(record);
+
+        return ResponseEntity.ok(Map.of("uuid", record.getId()));
+    }
+
+    @GetMapping("/shareDownloader")
+    @CrossOrigin(origins = {"http://localhost:5173"})
+    public ResponseEntity<?> handleFileDownload(
+            @RequestParam String uuid,
+            HttpServletResponse response) {
+
+        try {
+            ShareRecord record = shareService.findById(uuid);
+            if (record == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("分享链接不存在或已失效了喵");
+            }
+
+            if (record.getExpire() != null &&
+                    (new Date()).toInstant().isAfter(record.getExpire().toInstant())) {
+                return ResponseEntity.status(HttpStatus.GONE)
+                        .body("分享链接过期了喵");
+            }
+
+            Path filePath = Paths.get("userFiles/" + record.getUsername() + "/" + record.getFilePath());
+            if (!Files.exists(filePath)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("文件被本喵吃掉惹");
+            }
+
+            if (record.getIsDirectory()) {
+                String zipName = filePath.getFileName() + ".zip";
+                response.setContentType("application/zip");
+                response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + encodeFilename(zipName) + "\"");
+
+                // 流式压缩目录
+                try (ZipOutputStream zos = new ZipOutputStream(
+                        new BufferedOutputStream(response.getOutputStream()))) {
+
+                    Files.walk(filePath)
+                            .filter(path -> !Files.isDirectory(path))
+                            .forEach(path -> {
+                                try {
+                                    String relativePath = filePath.relativize(path).toString();
+                                    zos.putNextEntry(new ZipEntry(relativePath));
+                                    Files.copy(path, zos);
+                                    zos.closeEntry();
+                                } catch (IOException e) {
+                                    throw new RuntimeException("压缩文件失败: " + path, e);
+                                }
+                            });
+                }
+            } else {
+                response.setContentType(Files.probeContentType(filePath));
+                response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + encodeFilename(filePath.getFileName().toString()) + "\"");
+
+                // 流式传输文件
+                Files.copy(filePath, response.getOutputStream());
+            }
+
+            return ResponseEntity.ok().build();
+
+        } catch (InvalidPathException e) {
+            return ResponseEntity.badRequest()
+                    .body("你想干嘛!");
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("泥没有权限喵");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                    .body(e.getMessage());
+        }
+    }
+
+    private String encodeFilename(String filename) {
+        try {
+            return new String(filename.getBytes("UTF-8"), "ISO-8859-1");
+        } catch (Exception e) {
+            return filename;
+        }
+    }
 
     @PostMapping("/createFolder")
-    @CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"})
+    @CrossOrigin(origins = {"http://localhost:5173"})
     public ResponseEntity<?> createFolder(
             @RequestBody Map<String, String> requestBody) {
         String userName = LemonCloudCoreApplication.getUsername(requestBody.get("token"));
