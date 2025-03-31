@@ -25,12 +25,12 @@ import java.util.zip.ZipOutputStream;
 
 @RestController
 @RequestMapping("/file")
-@CrossOrigin(origins = {"http://localhost:5173"})
+@CrossOrigin(origins = {"http://localhost"})
 public class FileController {
     private final ShareService shareService = new ShareService();
 
     @PostMapping("/share")
-    @CrossOrigin(origins = {"http://localhost:5173"})
+    @CrossOrigin(origins = {"http://localhost"})
     public ResponseEntity<?> createShare(
             @RequestBody Map<String, Object> requestBody) {
         String userName = LemonCloudCoreApplication.getUsername((String) requestBody.get("token"));
@@ -49,7 +49,7 @@ public class FileController {
     }
 
     @GetMapping("/shareDownloader")
-    @CrossOrigin(origins = {"http://localhost:5173"})
+    @CrossOrigin(origins = {"http://localhost"})
     public ResponseEntity<?> handleFileDownload(
             @RequestParam String uuid,
             HttpServletResponse response) {
@@ -79,7 +79,6 @@ public class FileController {
                 response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + encodeFilename(zipName) + "\"");
 
-                // 流式压缩目录
                 try (ZipOutputStream zos = new ZipOutputStream(
                         new BufferedOutputStream(response.getOutputStream()))) {
 
@@ -101,7 +100,6 @@ public class FileController {
                 response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + encodeFilename(filePath.getFileName().toString()) + "\"");
 
-                // 流式传输文件
                 Files.copy(filePath, response.getOutputStream());
             }
 
@@ -129,7 +127,7 @@ public class FileController {
     }
 
     @PostMapping("/createFolder")
-    @CrossOrigin(origins = {"http://localhost:5173"})
+    @CrossOrigin(origins = {"http://localhost"})
     public ResponseEntity<?> createFolder(
             @RequestBody Map<String, String> requestBody) {
         String userName = LemonCloudCoreApplication.getUsername(requestBody.get("token"));
@@ -167,11 +165,13 @@ public class FileController {
     }
 
     @GetMapping("/download")
-    @CrossOrigin(origins = "http://localhost:5173")
+    @CrossOrigin(origins = "http://localhost")
     public ResponseEntity<Resource> downloadFile(
             @RequestParam String path,
             @RequestParam String file,
-            @RequestParam String token) {
+            @RequestHeader("Authorization") String token) {
+        System.out.println(token);
+
         String userName = LemonCloudCoreApplication.getUsername(token);
 
         try {
@@ -185,10 +185,8 @@ public class FileController {
             String contentType = Files.probeContentType(filePath);
 
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=\"" + resource.getFilename() + "\"")
-                    .contentType(MediaType.parseMediaType(
-                            contentType != null ? contentType : "application/octet-stream"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + encodeFilename(resource.getFilename()) + "\"")
+                    .contentType(MediaType.parseMediaType(contentType != null ? contentType : "application/octet-stream"))
                     .body(resource);
 
         } catch (InvalidPathException e) {
@@ -200,7 +198,7 @@ public class FileController {
 
 
     @PostMapping("/delete")
-    @CrossOrigin(origins = "http://localhost:5173")
+    @CrossOrigin(origins = "http://localhost")
     public ResponseEntity<?> deleteFile(
             @RequestBody Map<String, String> requestBody) {
         String userName = LemonCloudCoreApplication.getUsername(requestBody.get("token"));
@@ -241,7 +239,7 @@ public class FileController {
     }
 
     @GetMapping("/list")
-    @CrossOrigin(origins = "http://localhost:5173")
+    @CrossOrigin(origins = "http://localhost")
     public ResponseEntity<?> getFileList(
             @RequestParam(value = "path", defaultValue = "") String relativePath, String token) {
         String userName = LemonCloudCoreApplication.getUsername(token);
@@ -285,7 +283,7 @@ public class FileController {
     }
 
     @PostMapping("/upload")
-    @CrossOrigin(origins = "http://localhost:5173")
+    @CrossOrigin(origins = "http://localhost")
     public ResponseEntity<String> handleFileUpload(
             @RequestParam("file") MultipartFile file, String token, String paths) {
 

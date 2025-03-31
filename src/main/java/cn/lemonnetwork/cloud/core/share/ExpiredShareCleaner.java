@@ -17,14 +17,14 @@ public class ExpiredShareCleaner {
         scheduler.scheduleAtFixedRate(
                 this::cleanTask,
                 calculateInitialDelay(),
-                24 * 60 * 60,
-                TimeUnit.SECONDS
+                1,
+                TimeUnit.DAYS
         );
     }
 
     private void cleanTask() {
         int count = shareService.cleanExpiredShares();
-        System.out.println("已清理过期分享记录: " + count + "条");
+        System.out.println("本喵清理了过期分享记录 " + count + "条喵 明天继续努力ψ(｀∇´)ψ");
     }
 
     private long calculateInitialDelay() {

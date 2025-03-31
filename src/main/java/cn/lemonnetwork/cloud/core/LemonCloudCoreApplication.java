@@ -37,28 +37,7 @@ public class LemonCloudCoreApplication {
         ShareService.loadCollection(); //加载分享服务的表喵
         //如果直接在全局变量中定义会被null塞满❤喵
         //本喵真聪明
-
-        setMongoCodec(); //设置杂鱼MongoDB的ShareRecord的编解码器喵
     }
-
-    public static void setMongoCodec() {
-        CodecRegistry pojoCodecRegistry = CodecRegistries.fromProviders(
-                PojoCodecProvider.builder()
-                        .register(ShareRecord.class)
-                        .automatic(true)
-                        .build()
-        );
-
-        // 2. 组合默认编解码器和 POJO 编解码器
-        CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
-                MongoClientSettings.getDefaultCodecRegistry(),
-                pojoCodecRegistry
-        );
-
-        database = database.withCodecRegistry(codecRegistry);
-    }
-
-
 
     public static MongoClient getClient() {
         return client;
@@ -82,6 +61,6 @@ public class LemonCloudCoreApplication {
                 return entry.getKey();
             }
         }
-        return null; // 未找到返回 null
+        return null;
     }
 }
