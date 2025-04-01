@@ -170,7 +170,6 @@ public class FileController {
             @RequestParam String path,
             @RequestParam String file,
             @RequestHeader("Authorization") String token) {
-        System.out.println(token);
 
         String userName = LemonCloudCoreApplication.getUsername(token);
 
@@ -196,6 +195,42 @@ public class FileController {
         }
     }
 
+
+    @GetMapping("/rename")
+    @CrossOrigin(origins = "http://localhost")
+    public ResponseEntity<?> renameFile(
+            @RequestParam String path,
+            @RequestParam String oldName,
+            @RequestParam String newName,
+            @RequestParam String token) {
+
+        String userName = LemonCloudCoreApplication.getUsername(token);
+
+        try {
+            Path sourcePath = Paths.get("userFiles/" + userName + "/"
+                    + (path.isEmpty() ? "" : path + "/")
+                    + oldName);
+            Path targetPath = sourcePath.resolveSibling(newName);
+
+            if (!Files.exists(sourcePath)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "文件不存在"));
+            }
+
+            if (Files.exists(targetPath)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "目标文件已存在"));
+            }
+
+            Files.move(sourcePath, targetPath);
+
+            return ResponseEntity.ok(Map.of("message", "重命名成功"));
+
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
 
     @PostMapping("/delete")
     @CrossOrigin(origins = "http://localhost")
