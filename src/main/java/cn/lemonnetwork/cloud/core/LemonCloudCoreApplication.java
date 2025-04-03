@@ -2,6 +2,7 @@ package cn.lemonnetwork.cloud.core;
 
 import cn.lemonnetwork.cloud.core.share.ShareRecord;
 import cn.lemonnetwork.cloud.core.share.ShareService;
+import cn.lemonnetwork.cloud.core.util.EmailUtil;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -36,7 +37,8 @@ public class LemonCloudCoreApplication {
 
         ShareService.loadCollection(); //加载分享服务的表喵
         //如果直接在全局变量中定义会被null塞满❤喵
-        //本喵真聪明
+
+        EmailUtil.init(); //初始化邮箱服务器喵
     }
 
     public static MongoClient getClient() {

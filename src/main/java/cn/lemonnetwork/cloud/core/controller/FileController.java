@@ -3,6 +3,7 @@ package cn.lemonnetwork.cloud.core.controller;
 import cn.lemonnetwork.cloud.core.LemonCloudCoreApplication;
 import cn.lemonnetwork.cloud.core.share.ShareRecord;
 import cn.lemonnetwork.cloud.core.share.ShareService;
+import cn.lemonnetwork.cloud.core.util.EmailUtil;
 import com.mongodb.client.MongoCollection;
 import jakarta.servlet.http.HttpServletResponse;
 import org.bson.Document;
@@ -28,6 +29,36 @@ import java.util.zip.ZipOutputStream;
 @CrossOrigin(origins = {"http://localhost"})
 public class FileController {
     private final ShareService shareService = new ShareService();
+
+    @GetMapping("/share/{uuid}")
+    @CrossOrigin(origins = {"http://localhost"})
+    public ResponseEntity<?> getShareInfo(@PathVariable String uuid) {
+        ShareRecord record = shareService.findById(uuid);
+
+        if (record == null) {
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(Map.of("message", "分享的内容不存在"));
+        }
+
+        return ResponseEntity.ok(record);
+    }
+
+    @GetMapping("/reportShare")
+    @CrossOrigin(origins = {"http://localhost"})
+    public ResponseEntity<?> reportShare(@RequestParam String uuid) {
+        ShareRecord record = shareService.findById(uuid);
+
+        if (record == null) {
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(Map.of("message", "分享的内容不存在"));
+        }
+
+        EmailUtil.sendEmail(EmailUtil.admin, "有一个分享的文件被举报", "举报文件UUID: " + uuid + "\n柠檬网盘");
+
+        return ResponseEntity.ok(Map.of("message", "举报成功"));
+    }
 
     @PostMapping("/share")
     @CrossOrigin(origins = {"http://localhost"})
