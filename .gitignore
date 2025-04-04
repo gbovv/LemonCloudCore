@@ -31,3 +31,5 @@ build/
 
 ### VS Code ###
 .vscode/
+
+/src/main/java/cn/lemonnetwork/cloud/core/util/EmailUtil.java

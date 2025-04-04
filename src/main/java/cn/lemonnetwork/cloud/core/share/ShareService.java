@@ -27,7 +27,7 @@ public class ShareService {
 
         ShareRecord record = new ShareRecord();
         record.setId(doc.getString("_id"));
-        record.setUsername(doc.getString("username"));
+        record.setCreator(doc.getString("creator"));
         record.setFilePath(doc.getString("filePath"));
         record.setIsDirectory(doc.getBoolean("isDirectory"));
         record.setCreated(doc.get("created", Date.class));
@@ -50,7 +50,7 @@ public class ShareService {
 
     public void insert(ShareRecord record) {
         Document doc = new Document("_id", record.getId())
-                .append("username", record.getUsername())
+                .append("creator", record.getCreator())
                 .append("filePath", record.getFilePath())
                 .append("isDirectory", record.getIsDirectory())
                 .append("created", record.getCreated())
@@ -64,7 +64,7 @@ public class ShareService {
         for (Document doc : collection.find(filter)) {
             ShareRecord record = new ShareRecord();
             record.setId(doc.getString("_id"));
-            record.setUsername(doc.getString("username"));
+            record.setCreator(doc.getString("creator"));
             record.setFilePath(doc.getString("filePath"));
             record.setIsDirectory(doc.getBoolean("isDirectory"));
             record.setCreated(doc.get("created", Date.class));

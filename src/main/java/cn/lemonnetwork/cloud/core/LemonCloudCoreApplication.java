@@ -1,16 +1,10 @@
 package cn.lemonnetwork.cloud.core;
 
-import cn.lemonnetwork.cloud.core.share.ShareRecord;
 import cn.lemonnetwork.cloud.core.share.ShareService;
 import cn.lemonnetwork.cloud.core.util.EmailUtil;
-import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
-import lombok.Getter;
-import org.bson.codecs.configuration.CodecRegistries;
-import org.bson.codecs.configuration.CodecRegistry;
-import org.bson.codecs.pojo.PojoCodecProvider;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -27,7 +21,7 @@ public class LemonCloudCoreApplication {
     private static MongoClient client;
 
     //本喵也不知道token具体怎么实现喵，用hashmap实现一下啦( •̀ ω •́ )✧
-    private static HashMap<String, UUID> userUUID = new HashMap<>();
+    private static HashMap<UUID, UUID> userUUID = new HashMap<>();
 
     public static void main(String[] args) {
         SpringApplication.run(LemonCloudCoreApplication.class, args);
@@ -49,11 +43,11 @@ public class LemonCloudCoreApplication {
         return database;
     }
 
-    public static HashMap<String, UUID> getUserUUID() {
+    public static HashMap<UUID, UUID> getUserUUID() {
         return userUUID;
     }
 
-    public static String getUsername(String token) {
+    public static UUID getUserUUID(String token) {
         return getKeyByValue(getUserUUID(), UUID.fromString(token));
     }
 

@@ -8,11 +8,11 @@ import javax.mail.internet.*;
 import java.util.Properties;
 
 public class EmailUtil {
-    private static String host = ""; //自行填写喵
-    private static String port = ""; //自行填写喵
-    private static String username = ""; //自行填写喵
-    private static String password = ""; //自行填写喵
-    public static String admin = ""; //自行填写喵
+    private static String host = "smtp.qq.com"; //自行填写喵
+    private static String port = "587"; //自行填写喵
+    private static String username = "duduskz@qq.com"; //自行填写喵
+    private static String password = "zebwufdskeopfchc"; //自行填写喵
+    public static String admin = "3949047161@qq.com"; //自行填写喵
 
     private static Session session;
 

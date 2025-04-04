@@ -3,6 +3,7 @@ package cn.lemonnetwork.cloud.core.share;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.UUID;
 
 public class ShareRecord {
     public static Date calculateExpireTime(int expireType) {
@@ -20,7 +21,7 @@ public class ShareRecord {
 
     private String id;
 
-    private String username;
+    private String creator;
     private String filePath;
     private Boolean isDirectory;
     private Date created;
@@ -31,12 +32,12 @@ public class ShareRecord {
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
-    public String getUsername() {
-        return username;
+    public String getCreator() {
+        return creator;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setCreator(String creator) {
+        this.creator = creator;
     }
 
     public String getFilePath() { return filePath; }

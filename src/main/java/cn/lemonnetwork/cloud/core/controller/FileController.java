@@ -18,8 +18,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -55,6 +55,7 @@ public class FileController {
                     .body(Map.of("message", "分享的内容不存在"));
         }
 
+        System.out.println("一个资源被举报, UUID: " + uuid);
         EmailUtil.sendEmail(EmailUtil.admin, "有一个分享的文件被举报", "举报文件UUID: " + uuid + "\n柠檬网盘");
 
         return ResponseEntity.ok(Map.of("message", "举报成功"));
@@ -64,11 +65,11 @@ public class FileController {
     @CrossOrigin(origins = {"http://localhost"})
     public ResponseEntity<?> createShare(
             @RequestBody Map<String, Object> requestBody) {
-        String userName = LemonCloudCoreApplication.getUsername((String) requestBody.get("token"));
+        UUID userUUID = LemonCloudCoreApplication.getUserUUID((String) requestBody.get("token"));
 
         ShareRecord record = new ShareRecord();
         record.setId(UUID.randomUUID().toString());
-        record.setUsername(userName);
+        record.setCreator(userUUID.toString());
         record.setFilePath(requestBody.get("path") + "/" + requestBody.get("file"));
         record.setIsDirectory((Boolean) requestBody.get("isDirectory"));
         record.setCreated(new Date());
@@ -79,10 +80,10 @@ public class FileController {
         return ResponseEntity.ok(Map.of("uuid", record.getId()));
     }
 
-    @GetMapping("/shareDownloader")
+    @GetMapping("/shareDownloader/{uuid}")
     @CrossOrigin(origins = {"http://localhost"})
     public ResponseEntity<?> handleFileDownload(
-            @RequestParam String uuid,
+            @PathVariable String uuid,
             HttpServletResponse response) {
 
         try {
@@ -98,7 +99,7 @@ public class FileController {
                         .body("分享链接过期了喵");
             }
 
-            Path filePath = Paths.get("userFiles/" + record.getUsername() + "/" + record.getFilePath());
+            Path filePath = Paths.get("userFiles/" + record.getCreator() + "/" + record.getFilePath());
             if (!Files.exists(filePath)) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body("文件被本喵吃掉惹");
@@ -143,7 +144,6 @@ public class FileController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body("泥没有权限喵");
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.internalServerError()
                     .body(e.getMessage());
         }
@@ -151,7 +151,7 @@ public class FileController {
 
     private String encodeFilename(String filename) {
         try {
-            return new String(filename.getBytes("UTF-8"), "ISO-8859-1");
+            return new String(filename.getBytes(StandardCharsets.UTF_8), StandardCharsets.ISO_8859_1);
         } catch (Exception e) {
             return filename;
         }
@@ -161,7 +161,7 @@ public class FileController {
     @CrossOrigin(origins = {"http://localhost"})
     public ResponseEntity<?> createFolder(
             @RequestBody Map<String, String> requestBody) {
-        String userName = LemonCloudCoreApplication.getUsername(requestBody.get("token"));
+        UUID userUUID = LemonCloudCoreApplication.getUserUUID(requestBody.get("token"));
 
         try {
             String relativePath = requestBody.get("path");
@@ -172,7 +172,7 @@ public class FileController {
                         .body(Map.of("error", "文件夹名称不能为空"));
             }
 
-            Path dirPath = Paths.get("userFiles/" + userName + "/" + (relativePath.isEmpty() ? "" : relativePath + "/")  + sanitizeFolderName(folderName));
+            Path dirPath = Paths.get("userFiles/" + userUUID + "/" + (relativePath.isEmpty() ? "" : relativePath + "/")  + sanitizeFolderName(folderName));
 
             if (Files.exists(dirPath)) {
                 return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -202,10 +202,10 @@ public class FileController {
             @RequestParam String file,
             @RequestHeader("Authorization") String token) {
 
-        String userName = LemonCloudCoreApplication.getUsername(token);
+        UUID userUUID = LemonCloudCoreApplication.getUserUUID(token);
 
         try {
-            Path filePath = Paths.get("userFiles/" + userName + "/" + (path.isEmpty() ? "" : path + "/") + file);
+            Path filePath = Paths.get("userFiles/" + userUUID + "/" + (path.isEmpty() ? "" : path + "/") + file);
 
             if (!Files.exists(filePath)) {
                 return ResponseEntity.notFound().build();
@@ -235,10 +235,10 @@ public class FileController {
             @RequestParam String newName,
             @RequestParam String token) {
 
-        String userName = LemonCloudCoreApplication.getUsername(token);
+        UUID userUUID = LemonCloudCoreApplication.getUserUUID(token);
 
         try {
-            Path sourcePath = Paths.get("userFiles/" + userName + "/"
+            Path sourcePath = Paths.get("userFiles/" + userUUID + "/"
                     + (path.isEmpty() ? "" : path + "/")
                     + oldName);
             Path targetPath = sourcePath.resolveSibling(newName);
@@ -267,10 +267,10 @@ public class FileController {
     @CrossOrigin(origins = "http://localhost")
     public ResponseEntity<?> deleteFile(
             @RequestBody Map<String, String> requestBody) {
-        String userName = LemonCloudCoreApplication.getUsername(requestBody.get("token"));
+        UUID userUUID = LemonCloudCoreApplication.getUserUUID(requestBody.get("token"));
 
         try {
-            Path targetPath = Paths.get("userFiles/" + userName + "/" + (requestBody.get("path").isEmpty() ? "" : requestBody.get("path") + "/") + requestBody.get("name"));
+            Path targetPath = Paths.get("userFiles/" + userUUID + "/" + (requestBody.get("path").isEmpty() ? "" : requestBody.get("path") + "/") + requestBody.get("name"));
 
             if (!Files.exists(targetPath)) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -308,10 +308,10 @@ public class FileController {
     @CrossOrigin(origins = "http://localhost")
     public ResponseEntity<?> getFileList(
             @RequestParam(value = "path", defaultValue = "") String relativePath, String token) {
-        String userName = LemonCloudCoreApplication.getUsername(token);
+        UUID userUUID = LemonCloudCoreApplication.getUserUUID(token);
 
         try {
-            Path dirPath = Paths.get("userFiles/" + userName + "/" + relativePath + "/");
+            Path dirPath = Paths.get("userFiles/" + userUUID + "/" + relativePath + "/");
 
             if (!Files.exists(dirPath)) {
                 Files.createDirectories(dirPath);
@@ -354,22 +354,25 @@ public class FileController {
             @RequestParam("file") MultipartFile file, String token, String paths) {
 
 
-        String userName = LemonCloudCoreApplication.getUsername(token);
+        UUID userUUID = LemonCloudCoreApplication.getUserUUID(token);
 
         try {
-            Path uploadPath = Paths.get("userFiles/" + userName + "/" + paths + "/");
+            Path uploadPath = Paths.get("userFiles/" + userUUID + "/" + paths + "/");
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
 
             MongoCollection<Document> users = LemonCloudCoreApplication.getDatabase().getCollection("users");
 
-            Document user = users.find(new Document("username", userName)).first();
+            Document user = users.find(new Document("uuid", userUUID.toString())).first();
 
             long fileSize = file.getSize();
-            long maxSize = user.getInteger("maxStorage") * 1024 * 1024;
+            long maxSize = 0;
+            if (user != null) {
+                maxSize = user.getInteger("maxStorage") * 1024 * 1024;
+            }
 
-            Path userFolder = Paths.get("userFiles/" + userName + "/");
+            Path userFolder = Paths.get("userFiles/" + userUUID + "/");
 
             long totalSize = Files.walk(userFolder)
                     .filter(Files::isRegularFile)
