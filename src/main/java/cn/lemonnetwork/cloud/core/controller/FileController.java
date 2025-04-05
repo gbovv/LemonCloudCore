@@ -3,8 +3,12 @@ package cn.lemonnetwork.cloud.core.controller;
 import cn.lemonnetwork.cloud.core.LemonCloudCoreApplication;
 import cn.lemonnetwork.cloud.core.share.ShareRecord;
 import cn.lemonnetwork.cloud.core.share.ShareService;
+import cn.lemonnetwork.cloud.core.util.AddressUtil;
 import cn.lemonnetwork.cloud.core.util.EmailUtil;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.mongodb.client.MongoCollection;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.bson.Document;
 import org.springframework.core.io.Resource;
@@ -21,6 +25,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -44,10 +49,21 @@ public class FileController {
         return ResponseEntity.ok(record);
     }
 
+    private final Cache<String, String> reporters = Caffeine.newBuilder()
+            .expireAfterWrite(60, TimeUnit.SECONDS)
+            .build();
+
     @GetMapping("/reportShare")
     @CrossOrigin(origins = {"http://localhost"})
-    public ResponseEntity<?> reportShare(@RequestParam String uuid) {
+    public ResponseEntity<?> reportShare(@RequestParam String uuid, HttpServletRequest response) {
         ShareRecord record = shareService.findById(uuid);
+
+        if (reporters.getIfPresent(AddressUtil.getClientIpAddress(response)) != null) {
+
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(Map.of("message", "举报过于频繁"));
+        }
 
         if (record == null) {
             return ResponseEntity
