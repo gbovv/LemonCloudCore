@@ -385,23 +385,25 @@ public class FileController {
             long fileSize = file.getSize();
             long maxSize = 0;
             if (user != null) {
-                maxSize = user.getInteger("maxStorage") * 1024 * 1024;
+                maxSize = user.getInteger("maxStorage");
             }
 
             Path userFolder = Paths.get("userFiles/" + userUUID + "/");
 
-            long totalSize = Files.walk(userFolder)
+            long totalSize = (Files.walk(userFolder)
                     .filter(Files::isRegularFile)
                     .mapToLong(p -> {
                         try {
-                            return Files.size(p);
+                            return Files.size(p) / 1048576;
                         } catch (IOException e) {
                             return 0;
                         }
                     })
-                    .sum();
+                    .sum());
 
             if (totalSize + fileSize > maxSize) {
+                //System.out.println("调试喵 添加后: " + (totalSize + fileSize) + " 总大小: " + maxSize);
+
                 return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
                         .body("{\"message\": \"Maxed\"}");
             }
