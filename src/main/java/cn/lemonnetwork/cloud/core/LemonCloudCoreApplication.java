@@ -18,25 +18,19 @@ public class LemonCloudCoreApplication {
     //数据库相关变量喵
     private static MongoDatabase database;
 
-    private static MongoClient client;
-
     //本喵也不知道token具体怎么实现喵，用hashmap实现一下啦( •̀ ω •́ )✧
-    private static HashMap<UUID, UUID> userUUID = new HashMap<>();
+    private static final HashMap<UUID, UUID> userUUID = new HashMap<>();
 
     public static void main(String[] args) {
         SpringApplication.run(LemonCloudCoreApplication.class, args);
 
-        client = MongoClients.create("mongodb://localhost:27017");
+        MongoClient client = MongoClients.create("mongodb://localhost:27017");
         database = client.getDatabase("lemoncloud"); //初始化数据库变量喵
 
         ShareService.loadCollection(); //加载分享服务的表喵
         //如果直接在全局变量中定义会被null塞满❤喵
 
         EmailUtil.init(); //初始化邮箱服务器喵
-    }
-
-    public static MongoClient getClient() {
-        return client;
     }
 
     public static MongoDatabase getDatabase() {
